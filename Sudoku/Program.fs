@@ -14,31 +14,49 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 type Box = { Row: int; Column: int }
-type Pos = { Row: int; Column: int; Box: Box }
-type CellValue = Value of int | Unsolved
-type Cell = { Value: CellValue; Pos: Pos }
 
 let newBox (row: int) (col: int) : Box =
     let r = ((row - 1) / 3) + 1
     let c = ((col - 1) / 3) + 1
     { Row=r; Column=c }
 
-let newPos (row: int) (col: int) : Pos =
-    let box = newBox row col
-    { Row=row; Column=col; Box=box }
+type Pos(row: int, column: int) =
+    member this.Row = row
+    member this.Column = column
+    member this.Box = newBox row column
 
-let newCell (value: int) (row: int) (col: int) : Cell =
-    let pos = newPos row col
-    match value with
-        | 0 -> { Value=Unsolved; Pos=pos }
-        | _ -> { Value=Value value; Pos=pos }
+    override this.GetHashCode() = hash(this.Row, this.Column)
+    override this.Equals(other) =
+        match other with
+            | :? Pos as o -> (this.Row, this.Column) = (o.Row, o.Column)
+            | _ -> false
 
-let initCandidates : seq<Cell> =
-    let cs = seq { for row in [1..9] do
-                   for col in [1..9] do
-                   for n in [1..9] do
-                   yield newCell n row col }
-    cs
+    override this.ToString() = sprintf "Pos{row: %d, column: %d}" this.Row this.Column
+
+    member this.OnSameBox(other: Pos) = (this.Box = other.Box)
+    member this.OnSameColumn(other: Pos) = (this.Column = other.Column)
+    member this.OnSameRow(other: Pos) = (this.Row = other.Row)
+    member this.OnSameLine(other: Pos) = this.OnSameRow(other) || this.OnSameColumn(other)
+    member this.Sees(other: Pos) =
+        this.OnSameRow(other) || this.OnSameColumn(other) || this.OnSameBox(other)
+
+type CellValue = Value of int | Unsolved
+type Cell(value: CellValue, pos: Pos) =
+    member this.Pos = pos
+    member this.Value = value
+
+    new(value: int, row: int, col: int) =
+        let num =
+            match value with
+                | 0 -> Unsolved
+                | x -> Value x
+        let pos = Pos(row, col)
+        Cell(num, pos)
+
+    override this.ToString() = sprintf "Cell{pos: %A, value: %A}" this.Pos this.Value
+
+    member this.Conflicts(other: Cell) =
+        this.Pos.Sees(other.Pos) && this.Value = other.Value
 
 let strToGrid (grid: seq<char>) : seq<Cell> =
     let charToInt x = int x - int '0'
@@ -47,7 +65,40 @@ let strToGrid (grid: seq<char>) : seq<Cell> =
     |> Seq.mapi (fun i x ->
                  let r = (i / 9) + 1
                  let c = (i % 9) + 1
-                 newCell (charToInt x) r c)
+                 Cell(charToInt x, r, c))
+
+let initCandidates() : seq<Cell> =
+    seq { for row in [1..9] do
+          for col in [1..9] do
+          for n in [1..9] do
+          yield Cell(n, row, col) }
+
+type Solver(grid: string) =
+    let mutable _grid : seq<Cell> = strToGrid grid
+    let mutable _candidates : seq<Cell> = initCandidates()
+
+    member this.Grid = _grid
+    member this.Candidates = _candidates
+
+    member this.Solve() : bool =
+        let (solved, unsolved) =
+            _grid
+            |> List.ofSeq
+            |> List.partition (fun (cell: Cell) ->
+                               match cell.Value with
+                               | CellValue.Unsolved -> false
+                               | CellValue.Value num -> true)
+
+        let unsolvedMap =
+            unsolved
+            |> Seq.map (fun cell -> (cell.Pos, cell))
+            |> dict
+
+        _candidates <-
+            _candidates
+            |> Seq.filter (fun (cell: Cell) -> unsolvedMap.ContainsKey cell.Pos)
+
+        false
 
 [<EntryPoint>]
 let main argv =
@@ -69,13 +120,6 @@ let main argv =
         |> Seq.map (fun cell -> (cell.Pos, cell))
         |> dict
 
-    let cands = initCandidates
-
-    let candMap =
-        cands
-        |> Seq.groupBy (fun (cell: Cell) -> cell.Pos)
-        |> dict
-
-    printfn "    cell %A" (candMap.Item((newPos 1 1)))
+    let solver = Solver(strGrid)
 
     0
