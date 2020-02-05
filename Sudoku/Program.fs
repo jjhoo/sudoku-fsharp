@@ -80,6 +80,21 @@ type Solver(grid: string) =
     member this.Grid = _grid
     member this.Candidates = _candidates
 
+    member this.RemoveConflicting(cells: seq<Cell>) =
+        let filterFun (cell: Cell) : bool =
+            _grid
+            |> Seq.exists (fun (cell2: Cell) ->
+                           cell.Pos.Sees(cell2.Pos) && cell.Value = cell2.Value)
+
+        printfn "Old count: %d" (Seq.length _candidates)
+
+        _candidates <-
+                _candidates
+                |> Seq.filter (filterFun >> not)
+
+        printfn "Removed any? %d" (Seq.length _candidates)
+        ignore
+
     member this.Solve() : bool =
         let (solved, unsolved) =
             _grid
@@ -94,9 +109,20 @@ type Solver(grid: string) =
             |> Seq.map (fun cell -> (cell.Pos, cell))
             |> dict
 
-        _candidates <-
+        let nsolved =
+             solved
+             |> Seq.ofList
+
+        let ncandidates =
             _candidates
-            |> Seq.filter (fun (cell: Cell) -> unsolvedMap.ContainsKey cell.Pos)
+            |> Seq.filter (fun (cell: Cell) ->
+                           unsolvedMap.ContainsKey cell.Pos)
+
+        let removed =
+            solved
+            |> Seq.ofList
+            |> this.RemoveConflicting
+            |> ignore
 
         false
 
@@ -121,5 +147,6 @@ let main argv =
         |> dict
 
     let solver = Solver(strGrid)
+    solver.Solve() |> ignore
 
     0
