@@ -32,6 +32,15 @@ type Pos(row: int, column: int) =
             | _ -> false
 
     override this.ToString() = sprintf "Pos{row: %d, column: %d}" this.Row this.Column
+    interface System.IComparable with
+        member this.CompareTo oobj =
+            let posCompare (a: Pos) (b: Pos) : int =
+                if a.Row = b.Row then compare a.Column b.Column
+                else compare a.Row b.Row
+
+            match oobj with
+                | :? Pos as other -> posCompare this other
+                | _ -> invalidArg "oobj" "unexpected type for oobj in CompareTo"
 
     member this.OnSameBox(other: Pos) = (this.Box = other.Box)
     member this.OnSameColumn(other: Pos) = (this.Column = other.Column)
@@ -53,6 +62,9 @@ type Cell(value: CellValue, pos: Pos) =
         let pos = Pos(row, col)
         Cell(num, pos)
 
+    new(other: Cell) =
+        Cell(other.Value, other.Pos)
+
     override this.ToString() = sprintf "Cell{pos: %A, value: %A}" this.Pos this.Value
 
     member this.Conflicts(other: Cell) =
@@ -67,15 +79,40 @@ let strToGrid (grid: seq<char>) : seq<Cell> =
                  let c = (i % 9) + 1
                  Cell(charToInt x, r, c))
 
-let initCandidates() : seq<Cell> =
-    seq { for row in [1..9] do
-          for col in [1..9] do
-          for n in [1..9] do
-          yield Cell(n, row, col) }
-
 type Solver(grid: string) =
-    let mutable _grid : seq<Cell> = strToGrid grid
-    let mutable _candidates : seq<Cell> = initCandidates()
+    let mutable _grid : seq<Cell> = Seq.empty
+    let mutable _candidates : seq<Cell> = Seq.empty
+    let mutable _solved : Map<Pos, Cell> = Map.empty
+
+    let getCandidates (solved: Map<Pos, Cell>) : seq<Cell> =
+        let gen (pos: Pos) = seq {
+            for n in [1..9] do
+                yield Cell(n, pos.Row, pos.Column)
+        }
+
+        let unsolved (pos: Pos) =
+                if (not (solved.ContainsKey pos)) then (gen pos)
+                else Seq.empty
+
+        seq {
+            for row in [1..9] do
+                for col in [1..9] do
+                    yield! (unsolved (Pos(row, col)))
+        }
+
+    do
+        _grid <- strToGrid grid
+        _solved <-
+            _grid
+            |> List.ofSeq
+            |> List.partition (fun (cell: Cell) ->
+                               match cell.Value with
+                               | CellValue.Unsolved -> false
+                               | CellValue.Value num -> true)
+            |> fst
+            |> Seq.map (fun cell -> (cell.Pos, cell))
+            |> Map.ofSeq
+        _candidates <- getCandidates _solved
 
     member this.Grid = _grid
     member this.Candidates = _candidates
@@ -84,7 +121,8 @@ type Solver(grid: string) =
         let filterFun (cell: Cell) : bool =
             _grid
             |> Seq.exists (fun (cell2: Cell) ->
-                           cell.Pos.Sees(cell2.Pos) && cell.Value = cell2.Value)
+                           (cell.Pos = cell2.Pos && cell2.Value <> CellValue.Unsolved)
+                           || (cell.Pos.Sees(cell2.Pos) && cell.Value = cell2.Value))
 
         printfn "Old count: %d" (Seq.length _candidates)
 
