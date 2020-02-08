@@ -131,8 +131,9 @@ module Solver =
                 |> Seq.fold (fun (acc: seq<Cell>) (cell: Cell) ->
                              acc
                              |> Seq.filter (fun (cell2: Cell) ->
-                                            not ((cell.Pos = cell2.Pos || cell.Pos.Sees(cell2.Pos))
-                                                 && cell.Value = cell2.Value)))
+                                            not (cell.Pos = cell2.Pos
+                                                 || (cell.Pos.Sees(cell2.Pos)
+                                                     && cell.Value = cell2.Value))))
                              _candidates
 
             printfn "Candidates length %d" (Seq.length ncandidates)
