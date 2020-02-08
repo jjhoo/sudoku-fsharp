@@ -46,18 +46,18 @@ module Solver =
         let mutable _solved : Map<Pos, Cell> = Map.empty
         let mutable _unsolved : Set<Pos> = Set.empty
 
-        let getCandidates (grid: seq<Cell>, solvedSet: Set<Pos>) : seq<Cell> =
+        let getCandidates (solved: seq<Cell>, unsolvedSet: Set<Pos>) : seq<Cell> =
             let gen (pos: Pos) = seq {
                 for n in [1..9] do
                     yield Cell(n, pos.Row, pos.Column)
             }
 
             let unsolved (pos: Pos) =
-                if solvedSet.Contains(pos) then (gen pos)
+                if unsolvedSet.Contains(pos) then (gen pos)
                 else Seq.empty
 
             let filterFun (cell: Cell) : bool =
-                grid
+                solved
                 |> Seq.exists (fun (cell2: Cell) ->
                                cell.Pos.Sees(cell2.Pos) && cell.Value = cell2.Value)
 
@@ -89,7 +89,7 @@ module Solver =
                 |> Set.ofSeq
 
             _candidates <-
-                getCandidates(_grid, _unsolved)
+                getCandidates(Seq.ofList solved, _unsolved)
 
         member this.Grid = _grid
         member this.Candidates = _candidates
