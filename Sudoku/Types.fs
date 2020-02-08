@@ -70,7 +70,27 @@ module Types =
         new(other: Cell) =
             Cell(other.Value, other.Pos)
 
+        override this.GetHashCode() = hash(this.Pos, this.Value)
+        override this.Equals(other) =
+            match other with
+                | :? Cell as o -> (this.Pos, this.Value) = (o.Pos, o.Value)
+                | _ -> false
+
         override this.ToString() = sprintf "Cell{pos: %A, value: %A}" this.Pos this.Value
+        interface System.IComparable with
+            member this.CompareTo oobj =
+                let cellCompare (a: Cell) (b: Cell) : int =
+                    if a.Pos = b.Pos then
+                        match (a.Value, b.Value) with
+                            | (CellValue.Value x, CellValue.Value y) -> compare x y
+                            | (x, y) when x = y -> 0
+                            | (_, CellValue.Unsolved) -> -1
+                            | (CellValue.Unsolved, _) -> 1
+                    else compare a.Pos b.Pos
+
+                match oobj with
+                    | :? Cell as other -> cellCompare this other
+                    | _ -> invalidArg "oobj" "unexpected type for oobj in CompareTo"
 
         member this.Conflicts(other: Cell) =
             this.Pos.Sees(other.Pos) && this.Value = other.Value

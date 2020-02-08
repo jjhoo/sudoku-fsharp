@@ -40,6 +40,31 @@ module Solver =
 
         { Solved = nsolved; Eliminated = Seq.empty; }
 
+    let findHiddenSingles (cands: seq<Cell>) : FindResult =
+        let setSingles (cands: seq<Cell>) (itemFun: Cell -> 'a) =
+            cands
+            |> Seq.groupBy (fun (c: Cell) -> (itemFun c, c.Value))
+            |> Seq.filter (fun (xs: _ * seq<Cell>) ->
+                           xs
+                           |> snd
+                           |> Seq.length
+                           |> (=) 1)
+            |> Seq.map (snd >> Seq.head)
+
+        let rowSingles = setSingles cands (fun (c: Cell) -> c.Pos.Row)
+        let colSingles = setSingles cands (fun (c: Cell) -> c.Pos.Column)
+        let boxSingles = setSingles cands (fun (c: Cell) -> c.Pos.Box)
+
+        let solved =
+            rowSingles
+            |> Seq.append colSingles
+            |> Seq.append boxSingles
+            |> Seq.distinct
+
+        printfn "Singles %A" solved
+
+        { Solved = solved; Eliminated = Seq.empty; }
+
     type Solver(grid: string) =
         let mutable _grid : seq<Cell> = Seq.empty
         let mutable _candidates : seq<Cell> = Seq.empty
@@ -147,6 +172,7 @@ module Solver =
 
             let finders : List<seq<Cell> -> FindResult> = [
                 findSinglesSimple
+                findHiddenSingles
                 ]
 
             let rec findLoop finders candidates =
