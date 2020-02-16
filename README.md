@@ -14,4 +14,7 @@ and packages *mono-complete*, *fsharp*, and *nuget* having been installed,
 
     nuget restore
     msbuild
-    mono ./Sudoku/obj/x86/Debug/Sudoku.exe test
+    mono Sudoku.App/bin/Debug/Sudoku.App.exe test
+
+    nuget install NUnit.Console -Version 3.9.0 -OutputDirectory testrunner
+    mono testrunner/NUnit.ConsoleRunner.3.9.0/tools/nunit3-console.exe Sudoku.Test/bin/Debug/Sudoku.Test.dll
