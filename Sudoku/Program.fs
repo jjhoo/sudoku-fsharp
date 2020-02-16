@@ -17,6 +17,8 @@
 namespace Sudoku
 
 module Program =
+    open Combinations
+    open Permutations
     open Types
     open Solver
 
@@ -27,5 +29,19 @@ module Program =
         let strGrid = "700600008800030000090000310006740005005806900400092100087000020000060009600008001"
         let solver = Solver(strGrid)
         solver.Solve() |> ignore
+
+        let combs = Combinations(5, 2)
+        combs.toSeq
+        |> Seq.iter (fun x -> printfn "%A" x)
+
+        let perms = Permutations(5)
+        perms.toSeq
+        |> Seq.iter (fun x -> printfn "%A" x)
+
+        printfn "Again?"
+        perms.toSeq
+        |> Seq.iter (fun x -> printfn "%A" x)
+
+        printfn "No?"
 
         0

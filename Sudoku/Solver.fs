@@ -16,6 +16,8 @@
 namespace Sudoku
 
 module Solver =
+    open Combinations
+    open Permutations
     open Types
 
     let strToGrid (grid: seq<char>) : seq<Cell> =

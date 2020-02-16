@@ -45,6 +45,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Combinations.fs" />
+    <Compile Include="Permutations.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Solver.fs" />
     <Compile Include="Program.fs" />
