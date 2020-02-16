@@ -18,3 +18,7 @@ and packages *mono-complete*, *fsharp*, and *nuget* having been installed,
 
     nuget install NUnit.Console -Version 3.9.0 -OutputDirectory testrunner
     mono testrunner/NUnit.ConsoleRunner.3.9.0/tools/nunit3-console.exe Sudoku.Test/bin/Debug/Sudoku.Test.dll
+
+# Testing
+
+Travis-ci: [![Build status](https://travis-ci.org/jjhoo/sudoku-fsharp.svg?branch=master)](https://travis-ci.org/jjhoo/sudoku-fsharp)
