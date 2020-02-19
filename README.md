@@ -4,20 +4,18 @@ An implementation based on logic.
 
 Work in progress.
 
-## Test run
+# Test run with dotnet
 
-Assuming debian/buster as the programming environment with mono repository as
+Assuming debian/buster as the programming environment with dotnet repository as
 
-    deb https://download.mono-project.com/repo/debian buster main
+    deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/debian/10/prod buster main
 
-and packages *mono-complete*, *fsharp*, and *nuget* having been installed,
+and package *dotnet-sdk-3.1* having been install,
 
-    nuget restore
-    msbuild
-    mono Sudoku.App/bin/Debug/Sudoku.App.exe test
+    dotnet restore
+    dotnet build
+    dotnet test Sudoku.Test/Sudoku.Test.fsproj
 
-    nuget install NUnit.Console -Version 3.9.0 -OutputDirectory testrunner
-    mono testrunner/NUnit.ConsoleRunner.3.9.0/tools/nunit3-console.exe Sudoku.Test/bin/Debug/Sudoku.Test.dll
 
 # Testing
 
