@@ -2,12 +2,12 @@ language: csharp
 solution: Sudoku.sln
 
 dist: xenial
-mono: latest
+mono: none
+dotnet: 3.1
 
 install:
-  - nuget restore Sudoku.sln
-  - nuget install NUnit.Console -Version 3.9.0 -OutputDirectory testrunner
+  - dotnet restore
 
 script:
-  - msbuild /p:Configuration=Debug Sudoku.sln
-  - mono testrunner/NUnit.ConsoleRunner.3.9.0/tools/nunit3-console.exe Sudoku.Test/bin/Debug/Sudoku.Test.dll
+  - dotnet build
+  - dotnet test Sudoku.Test/Sudoku.Test.fsproj
