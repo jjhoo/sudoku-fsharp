@@ -26,22 +26,8 @@ module Program =
     let main argv =
         printfn "Hello world %A" argv
 
-        let strGrid = "700600008800030000090000310006740005005806900400092100087000020000060009600008001"
+        let strGrid = "000000000231090000065003100008924000100050006000136700009300570000010843000000000"
         let solver = Solver(strGrid)
         solver.Solve() |> ignore
-
-        let combs = Combinations(5, 2)
-        combs.toSeq
-        |> Seq.iter (fun x -> printfn "%A" x)
-
-        let perms = Permutations(5)
-        perms.toSeq
-        |> Seq.iter (fun x -> printfn "%A" x)
-
-        printfn "Again?"
-        perms.toSeq
-        |> Seq.iter (fun x -> printfn "%A" x)
-
-        printfn "No?"
 
         0

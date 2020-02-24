@@ -95,4 +95,9 @@ module Types =
         member this.Conflicts(other: Cell) =
             this.Pos.Sees(other.Pos) && this.Value = other.Value
 
+        member this.Num() : int =
+            match this.Value with
+                | CellValue.Unsolved -> 0
+                | CellValue.Value num -> num
+
     type FindResult = { Solved: seq<Cell>; Eliminated: seq<Cell> }

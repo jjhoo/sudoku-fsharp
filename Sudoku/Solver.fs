@@ -20,6 +20,37 @@ module Solver =
     open Permutations
     open Types
 
+    let boxSets (cands: seq<Cell>) : seq<seq<Cell>> =
+        seq {
+            for row in [1..3] do
+            for col in [1..3] do
+            let box = newBox row col
+            let set = cands |> Seq.filter (fun (cell: Cell) -> box = cell.Pos.Box)
+            if not (Seq.isEmpty set)
+            then yield set
+        }
+
+    let rowSets (cands: seq<Cell>) : seq<seq<Cell>> =
+        seq {
+            for row in [1..9] do
+            let set = cands |> Seq.filter (fun (cell: Cell) -> row = cell.Pos.Row)
+            if not (Seq.isEmpty set)
+            then yield set
+        }
+
+    let colSets (cands: seq<Cell>) : seq<seq<Cell>> =
+        seq {
+            for col in [1..9] do
+            let set = cands |> Seq.filter (fun (cell: Cell) -> col = cell.Pos.Column)
+            if not (Seq.isEmpty set)
+            then yield set
+        }
+
+    let allSets cands =
+        [rowSets; colSets; boxSets;]
+        |> Seq.map (fun f -> f cands)
+        |> Seq.concat
+
     let strToGrid (grid: seq<char>) : seq<Cell> =
         let charToInt x = int x - int '0'
         // grid |> Seq.iteri (fun i x -> printfn "%d %c" i x)
@@ -63,9 +94,94 @@ module Solver =
             |> Seq.append boxSingles
             |> Seq.distinct
 
-        printfn "Singles %A" solved
-
         { Solved = solved; Eliminated = Seq.empty; }
+
+    let findSets (k: int) (pmatch: Set<int> -> Set<int> -> bool) (pelim: Set<Pos> -> Set<int> -> Cell -> bool) (cands: seq<Cell>) : FindResult =
+        let cellNumbersSet : (seq<Cell> -> Map<Pos, Set<int>>) =
+            let setF =
+                Seq.map (fun (cell: Cell) -> cell.Num())
+                >> Set.ofSeq
+
+            Seq.groupBy (fun (c: Cell) -> c.Pos)
+            >> Seq.map (fun (xs: (Pos * seq<Cell>)) ->
+                        let (p, cells) = xs
+                        (p, setF cells))
+            >> Map.ofSeq
+
+        let find (k: int) (nset: Set<int>) (set: seq<Cell>) : seq<Cell> =
+            let cmap = cellNumbersSet set
+            let n = Seq.length nset
+            let numberArray : int [] = Set.toArray nset
+
+            let cmapKeys cmap =
+                cmap
+                |> Map.toSeq
+                |> Seq.map fst
+                |> Set.ofSeq
+
+            let tmp (cset: Set<int>) : seq<Cell> =
+                let matching =
+                    cmap
+                    |> Map.filter (fun (p: Pos) (nset: Set<int>) -> pmatch nset cset)
+
+                // printfn "matching %d %d %A" k (Seq.length matching) matching
+                if Seq.length matching = k
+                then Seq.filter (pelim (cmapKeys matching) cset) set
+                else Seq.empty
+
+            Combinations(n, k).toSeq
+            |> Seq.map (Array.map (Array.get numberArray)
+                        >> Set.ofSeq
+                        >> tmp)
+            |> Seq.concat
+            |> Seq.distinct
+
+        let findAll cands =
+            let f set =
+                let nset =
+                    set
+                    |> Seq.map (fun (cell: Cell) -> cell.Num())
+                    |> Set.ofSeq
+
+                // printfn "Find sets (n, k) = (%d, %d)" (Seq.length nset) k
+
+                if Seq.length nset > k then (find k nset set)
+                else Seq.empty
+
+            allSets cands
+            |> Seq.map f
+            |> Seq.concat
+            |> Seq.distinct
+            |> Seq.sort
+
+        let eliminated = findAll cands
+        { Solved = Seq.empty; Eliminated = eliminated; }
+
+    let findNakedSets (k: int) (cands: seq<Cell>) : FindResult =
+        // printfn "findNakedSets %d %A" k cands
+
+        let pelim (poss: Set<Pos>) (cset: Set<int>) (cell: Cell) : bool =
+            let n = cell.Num()
+            // printfn "pelim %d %A %A %A" n cell poss cset
+            not (Set.contains cell.Pos poss) && Set.contains n cset
+
+        let pmatch (nset: Set<int>) (cset: Set<int>) : bool =
+            // printfn "pmatch %A %A %A %A" nset cset (Set.isSubset nset cset) (nset = cset)
+            Set.isSubset nset cset
+
+        findSets k pmatch pelim cands
+
+    let findHiddenSets (k: int) (cands: seq<Cell>) : FindResult =
+        // printfn "findHiddenSets %d %A" k cands
+
+        let pelim (poss: Set<Pos>) (cset: Set<int>) (cell: Cell) : bool =
+            let n = cell.Num()
+            Set.contains cell.Pos poss && not (Set.contains n cset)
+
+        let pmatch (nset: Set<int>) (cset: Set<int>) : bool =
+            Seq.length (Set.intersect nset cset) > 0
+
+        findSets k pmatch pelim cands
 
     type Solver(grid: string) =
         let mutable _grid : seq<Cell> = Seq.empty
@@ -122,7 +238,7 @@ module Solver =
         member this.Candidates = _candidates
 
         member this.UpdateCandidates(eliminated: seq<Cell>) : seq<Cell> =
-            printfn "UpdateCandidates"
+            // printfn "UpdateCandidates"
 
             let ncandidates =
                 eliminated
@@ -132,12 +248,12 @@ module Solver =
                                             not (cell.Pos = cell2.Pos && cell.Value = cell2.Value)))
                              _candidates
 
-            printfn "Candidates length %d" (Seq.length ncandidates)
+            // printfn "Candidates length %d %d" (Seq.length ncandidates) (Seq.length eliminated)
             _candidates <- ncandidates
             _candidates
 
         member this.UpdateGrid(newSolved: seq<Cell>) : seq<Cell> =
-            printfn "UpdateGrid"
+            // printfn "UpdateGrid"
 
             _solved <-
                 newSolved
@@ -163,7 +279,7 @@ module Solver =
                                                      && cell.Value = cell2.Value))))
                              _candidates
 
-            printfn "Candidates length %d" (Seq.length ncandidates)
+            // printfn "Candidates length %d %d" (Seq.length ncandidates) (Seq.length newSolved)
             _candidates <- ncandidates
             _candidates
 
@@ -175,6 +291,12 @@ module Solver =
             let finders : List<seq<Cell> -> FindResult> = [
                 findSinglesSimple
                 findHiddenSingles
+                findNakedSets 2
+                findNakedSets 3
+                findHiddenSets 2
+                findHiddenSets 3
+                findNakedSets 4
+                findHiddenSets 4
                 ]
 
             let rec findLoop finders candidates =
