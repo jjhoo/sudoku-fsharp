@@ -21,30 +21,19 @@ module Solver =
     open Types
 
     let boxSets (cands: seq<Cell>) : seq<seq<Cell>> =
-        seq {
-            for row in [1..3] do
-            for col in [1..3] do
-            let box = newBox row col
-            let set = cands |> Seq.filter (fun (cell: Cell) -> box = cell.Pos.Box)
-            if not (Seq.isEmpty set)
-            then yield set
-        }
+        cands
+        |> Seq.groupBy (fun (cell: Cell) -> cell.Pos.Box)
+        |> Seq.map snd
 
     let rowSets (cands: seq<Cell>) : seq<seq<Cell>> =
-        seq {
-            for row in [1..9] do
-            let set = cands |> Seq.filter (fun (cell: Cell) -> row = cell.Pos.Row)
-            if not (Seq.isEmpty set)
-            then yield set
-        }
+        cands
+        |> Seq.groupBy (fun (cell: Cell) -> cell.Pos.Row)
+        |> Seq.map snd
 
     let colSets (cands: seq<Cell>) : seq<seq<Cell>> =
-        seq {
-            for col in [1..9] do
-            let set = cands |> Seq.filter (fun (cell: Cell) -> col = cell.Pos.Column)
-            if not (Seq.isEmpty set)
-            then yield set
-        }
+        cands
+        |> Seq.groupBy (fun (cell: Cell) -> cell.Pos.Column)
+        |> Seq.map snd
 
     let allSets cands =
         [rowSets; colSets; boxSets;]
@@ -191,7 +180,7 @@ module Solver =
 
         let getCandidates (solved: seq<Cell>, unsolvedSet: Set<Pos>) : seq<Cell> =
             let gen (pos: Pos) = seq {
-                for n in [1..9] do
+                for n in 1..9 do
                     yield Cell(n, pos.Row, pos.Column)
             }
 
@@ -205,8 +194,8 @@ module Solver =
                                cell.Pos.Sees(cell2.Pos) && cell.Value = cell2.Value)
 
             seq {
-                for row in [1..9] do
-                for col in [1..9] do
+                for row in 1..9 do
+                for col in 1..9 do
                 yield! (unsolved (Pos(row, col)))
             }
             |> Seq.filter (filterFun >> not)
