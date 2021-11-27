@@ -6,6 +6,7 @@ node {
         customImage.inside('-v $HOME/.dotnet:/home/jenkins/.dotnet') {
             stage('Install packages') {
 	        sh 'dotnet restore'
+		sh 'dotnet sdk check'
 	    }
 	    stage('Build dotnet') {
 	        sh 'dotnet build'
