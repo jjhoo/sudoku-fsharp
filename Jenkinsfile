@@ -11,7 +11,7 @@ node {
 	        sh 'dotnet build'
 	    }
 	    stage('Test') {
-	        sh 'dotnet test Sudoku.Test/Sudoku.Test.fsproj'
+	        sh 'dotnet test --collect:"XPlat Code Coverage" Sudoku.Test/Sudoku.Test.fsproj'
 	    }
             stage('Upload coverage to codecov') {
 	        sh '~/.local/bin/codecov --token $COVERAGE_TOKEN --no-color'
