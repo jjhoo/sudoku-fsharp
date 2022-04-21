@@ -1,7 +1,8 @@
 FROM debian:bullseye-slim
 
+ARG JENKINS_UID=1001
+ENV DEBIAN_FRONTEND teletype
 ENV DOTNET_CLI_TELEMETRY_OPTOUT 1
-ENV DEBIAN_FRONTEND noninteractive
 ENV LAST_UPDATED 2021-11-27-001
 
 COPY 42local.conf /etc/apt/apt.conf.d/42local.conf
@@ -20,7 +21,7 @@ RUN apt-get update
 RUN apt-get install -y \
     dotnet-sdk-6.0
 
-RUN useradd -u 1001 jenkins -m
+RUN useradd -u $JENKINS_UID jenkins -m
 RUN mkdir /home/jenkins/.dotnet
 
 USER jenkins
